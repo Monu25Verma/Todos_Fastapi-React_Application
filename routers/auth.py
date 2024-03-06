@@ -1,12 +1,16 @@
+import sys
+sys.path.append("..")
+
+from starlette.responses import RedirectResponse
 from datetime import timedelta, datetime
-from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import Annotated, Optional
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from models import Users
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from database import SessionLocal
+from database import SessionLocal, engine
 from starlette import status
 from jose import jwt, JWTError
 
@@ -18,6 +22,18 @@ router = APIRouter(
     tags=['auth'],
 responses = {404: {"description": "Not found"}}
 )
+
+
+class LoginForm:
+    def __init__(self, request:Request):
+        self.request : Request = request
+        self.username : Optional[str] = None
+        self.password : Optional[str] = None
+
+    async def create_oauth_form(self):
+        form = await self.request.form()
+        self.username = form.get("email")
+        self.password = form.get("password")
 
 SECRET_KEY = "0fbac017273826e59e199f95f653c882244614d272a51d34affc2f278b6ba7b2"
 ALGORITHM = "HS512"
@@ -106,20 +122,43 @@ def create_user(db: db_dependency,
     db.commit()
 
 
-@router.post("/token", response_model= Token)
-async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-                                 db: db_dependency):
+@router.post("/token")#, response_model= Token)
+async def login_for_access_token(response : Response, form_data: OAuth2PasswordRequestForm = Depends(),
+                                 db: Session = Depends(get_db)):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user')
-    token = create_access_token(user.username, user.id, user.role, timedelta(minutes=20))
-    return {'access_token': token, 'token_type': 'bearer'}
+        raise False
+        #raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user')
+    token_expires = timedelta(minutes=60)
+    token = create_access_token(user.username, user.id, expires_delta = token_expires)
 
+    response.set_cookie(key = "access_token", value= token, httponly = True)
+    #return {'access_token': token, 'token_type': 'bearer'}
+    return True
 
 
 @router.get("/", response_class= HTMLResponse)
 async def authentication_page(request: Request):
     return templates.TemplateResponse("login.html",{"request": request})
+
+
+@router.post("/", response_class=HTMLResponse)
+async def login(request: Request, db : Session = Depends(get_db)):
+    try:
+        form = LoginForm(request)
+        await form.create_oauth_form()
+        response = RedirectResponse(url = "/todo", status_code = status.HTTP_302_FOUND)
+
+        validation_user_cookie = await login_for_access_token(response = response, form_data = form, db = db)
+
+        if not validation_user_cookie:
+            msg = "incorrect Username or Password"
+            return templates.TemplateResponse("login.html", {"request": request, "msg": msg})
+        return response
+    except HTTPException:
+        msg = "Unknown Error"
+        return templates.TemplateResponse("login.html", {"request": request, "msg": msg})
+
 
 @router.get("/register", response_class=HTMLResponse)
 async def register(request:Request):

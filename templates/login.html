@@ -3,9 +3,22 @@
 <div class = "container">
   <div class = "card">
     <div class = "card-header">
-      Login
+        Login
     </div>
       <div class=" card-body">
+
+            {% if msg %}
+            {% if msg == 'Logout Successful' or msg == 'user Successfully created' %}    
+            <div class = "alter alter-success" role="alter">
+                {{msg}}
+            </div>
+            {% else %}
+            <div class = "alter-danger" role="alter">
+                {{msg}}
+            </div>
+            {% endif %}
+            {% endif %}
+            
           <form method = "POST" action="/auth">
               <div class = "form-group">
                   <label>Username</label>

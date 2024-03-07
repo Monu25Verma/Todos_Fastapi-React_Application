@@ -87,20 +87,25 @@ def create_access_token(username: str, user_id: int, role: str, expires_delta: t
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-async def get_current_user(token: Annotated[str, Depends(Oauth2_bearer)]):
+async def get_current_user(request: Request) #,token: Annotated[str, Depends(Oauth2_bearer)]):
     try:
+        token = request.cookies.get("access_token")
+        if token is None:
+            return None
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get('sub')
         user_id: int = payload.get('id'),
         user_role: str = payload.get('role')
         if username is None or user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user.')
-        users_details = {'username': username, 'id': user_id, 'user_role': user_role}
-        users_details['id'] = users_details['id'][0]
-        return users_details
+            return None
+            #raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user.')
+        #users_details = {'username': username, 'id': user_id, 'user_role': user_role}
+        # users_details['id'] = users_details['id'][0]
+        # return users_details
+        return {"username":username, "id": user_id}
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user.')
-
+        #raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user.')
+        raise get_user_exception()
 
 @router.post("/user", status_code=status.HTTP_201_CREATED)
 def create_user(db: db_dependency,
@@ -127,7 +132,7 @@ async def login_for_access_token(response : Response, form_data: OAuth2PasswordR
                                  db: Session = Depends(get_db)):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:
-        raise False
+        return False
         #raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user')
     token_expires = timedelta(minutes=60)
     token = create_access_token(user.username, user.id, expires_delta = token_expires)
@@ -149,10 +154,10 @@ async def login(request: Request, db : Session = Depends(get_db)):
         await form.create_oauth_form()
         response = RedirectResponse(url = "/todo", status_code = status.HTTP_302_FOUND)
 
-        validation_user_cookie = await login_for_access_token(response = response, form_data = form, db = db)
+        validate_user_cookie = await login_for_access_token(response = response, form_data = form, db = db)
 
-        if not validation_user_cookie:
-            msg = "incorrect Username or Password"
+        if not validate_user_cookie:
+            msg = "Incorrect Username or Password"
             return templates.TemplateResponse("login.html", {"request": request, "msg": msg})
         return response
     except HTTPException:

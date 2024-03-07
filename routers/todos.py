@@ -33,8 +33,14 @@ def get_db():
 
 @router.get("/", response_class=HTMLResponse)
 async def read_all_todo(request:Request, db: Session = Depends(get_db)):
-    todos= db.query(models.Todos).filter(models.Todos.owner_id == 1).all()
+    
+    user = await get_current_user(request)
+    if user is None:
+        return RedirectResponse(url = "/auth", status_code = status.HTTP_302_FOUND)
+    
+    todos = db.query(models.Todos).filter(models.Todos.owner_id == user.get("id")).all()
     return templates.TemplateResponse("home.html",{"request": request, "todos":todos})
+
 
 @router.get("/add", response_class=HTMLResponse)
 async def add_todo_page(request:Request):

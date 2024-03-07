@@ -4,7 +4,7 @@ sys.path.append("..")
 from starlette.responses import RedirectResponse
 from datetime import timedelta, datetime
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, , Form
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from models import Users
@@ -97,15 +97,16 @@ async def get_current_user(request: Request) #,token: Annotated[str, Depends(Oau
         user_id: int = payload.get('id'),
         user_role: str = payload.get('role')
         if username is None or user_id is None:
-            return None
+            logout(request)
+            #return None
             #raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user.')
         #users_details = {'username': username, 'id': user_id, 'user_role': user_role}
         # users_details['id'] = users_details['id'][0]
         # return users_details
         return {"username":username, "id": user_id}
     except JWTError:
-        #raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user.')
-        raise get_user_exception()
+        raise HTTPException(status_code=status.404, detail='Not Found')
+        
 
 @router.post("/user", status_code=status.HTTP_201_CREATED)
 def create_user(db: db_dependency,
@@ -165,21 +166,50 @@ async def login(request: Request, db : Session = Depends(get_db)):
         return templates.TemplateResponse("login.html", {"request": request, "msg": msg})
 
 
+@app.get("logout")
+async def logout(request:Request):
+    msg= "Logout Successfull"
+    response = templates.TemplateResponse("home.html", {request:request, "msg":msg})
+    response.delete_cookie(key = "access_token")
+    return response
+
+
 @router.get("/register", response_class=HTMLResponse)
 async def register(request:Request):
     return templates.TemplateResponse("register.html", {"request":request})
 
 
 
+@router.post("/register", response_class = HTMLRespons")
+async def register_user(request:Request, email: str = Form(...), username : str = form(...),
+                        first_name: str = Form(...), last_name : str = Form(...),
+                        password: str = Form(...), password2 : str = Form(...),
+                        db: Session = Depends(get_db)):
+    
+validation1 = db.query(models.Users).filter(models.Users.username == username).first()
+
+validation2 = db.query(models.Users).filter(models.Users.email == email).first()
+
+if password != password2 or validation1 is Not None or validation2 is not None:
+    msg = "Invalid registration request"
+    return templates.TemplateResponse("register.html", {"request": request, "msg": msg})
+
+user_model = models.Users()
+user_model.username = username
+user_model.email = username
+user_model.first_name = first_name
+user_model.last_name = last_name
 
 
+hashed_password = get_password_hash(password)
+user_model.hashed_password = hashed_password
+user_model.is_active  =True
 
+db.add(user_model)
+db.commit()
 
-
-
-
-
-
+msg = "User Created Successfully"
+return templates.TemplateResponse("login.html",{"request": request, "msg": msg})
 
 
 

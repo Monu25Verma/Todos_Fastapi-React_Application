@@ -3,7 +3,8 @@ from models import Base           #.Base is for testing file connection
 from database import engine            #.Database is for testing file connection
 from routers import auth, todos, admin, users
 from starlette.staticfiles import StaticFiles
-
+from starlette import status
+from starlette.responses import RedirectResponse
 
 description = """
 Book App API helps you do awesome stuff. 🚀
@@ -32,6 +33,9 @@ app.mount("/static", StaticFiles(directory = "static"), name = "static")
 def health_check():
     return {'status' : 'Healthy'}
 
+
+@app.get("/")
+async def RedirectResponse(url = "/todos", status_code = status.HTTP_302_FOUND)
 
 
 app.include_router(auth.router)

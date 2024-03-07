@@ -166,10 +166,10 @@ async def login(request: Request, db : Session = Depends(get_db)):
         return templates.TemplateResponse("login.html", {"request": request, "msg": msg})
 
 
-@app.get("logout")
+@router.get("logout")
 async def logout(request:Request):
     msg= "Logout Successfull"
-    response = templates.TemplateResponse("home.html", {request:request, "msg":msg})
+    response = templates.TemplateResponse("home.html", {"request":request, "msg":msg})
     response.delete_cookie(key = "access_token")
     return response
 

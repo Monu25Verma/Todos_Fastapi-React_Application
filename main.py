@@ -35,13 +35,14 @@ def health_check():
 
 
 @app.get("/")
-async def RedirectResponse(url = "/todos", status_code = status.HTTP_302_FOUND)
+async def RedirectResponse(url = "/todo/", status_code = status.HTTP_302_FOUND):
+    return
 
 
 app.include_router(auth.router)
 app.include_router(todos.router)
-# app.include_router(admin.router)
-# app.include_router(users.router)
+app.include_router(admin.router)
+app.include_router(users.router)
 app.include_router(user_changepass.router)
 
 

@@ -1,6 +1,6 @@
 from .utils import *
 from fastapi import status
-from ..routers.auth import  get_db , authenticate_user, create_access_token, ALGORITHM, SECRET_KEY, get_current_user
+from routers.auth import  get_db , authenticate_user, create_access_token, ALGORITHM, SECRET_KEY, get_current_user
 from jose import jwt
 from datetime import timedelta
 from fastapi import HTTPException

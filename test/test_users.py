@@ -1,8 +1,8 @@
 from .utils import *
 from fastapi import status
-from ..models import Todos
-from ..routers.users import get_db, get_current_user
-from ..routers.auth import bcrypt_context
+from models import Todos
+from routers.users import get_db, get_current_user
+from routers.auth import bcrypt_context
 
 app.dependency_overrides[get_db] = override_get_db
 app.dependency_overrides[get_current_user]= override_get_current_user

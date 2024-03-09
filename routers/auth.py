@@ -4,7 +4,7 @@ sys.path.append("..")
 from starlette.responses import RedirectResponse
 from datetime import timedelta, datetime
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, , Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from models import Users
@@ -86,8 +86,12 @@ def create_access_token(username: str, user_id: int, role: str, expires_delta: t
     encode.update({'exp': expires})
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
+def get_password_hash(password: str):
 
-async def get_current_user(request: Request) #,token: Annotated[str, Depends(Oauth2_bearer)]):
+
+
+
+async def get_current_user(request: Request): #,token: Annotated[str, Depends(Oauth2_bearer)]):
     try:
         token = request.cookies.get("access_token")
         if token is None:
@@ -105,7 +109,7 @@ async def get_current_user(request: Request) #,token: Annotated[str, Depends(Oau
         # return users_details
         return {"username":username, "id": user_id}
     except JWTError:
-        raise HTTPException(status_code=status.404, detail='Not Found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Not Found')
         
 
 @router.post("/user", status_code=status.HTTP_201_CREATED)
@@ -153,7 +157,7 @@ async def login(request: Request, db : Session = Depends(get_db)):
     try:
         form = LoginForm(request)
         await form.create_oauth_form()
-        response = RedirectResponse(url = "/todo", status_code = status.HTTP_302_FOUND)
+        response = RedirectResponse(url = "/todo/", status_code = status.HTTP_302_FOUND)
 
         validate_user_cookie = await login_for_access_token(response = response, form_data = form, db = db)
 
@@ -166,7 +170,7 @@ async def login(request: Request, db : Session = Depends(get_db)):
         return templates.TemplateResponse("login.html", {"request": request, "msg": msg})
 
 
-@router.get("logout")
+@router.get("/logout")
 async def logout(request:Request):
     msg= "Logout Successfull"
     response = templates.TemplateResponse("home.html", {"request":request, "msg":msg})
@@ -180,36 +184,32 @@ async def register(request:Request):
 
 
 
-@router.post("/register", response_class = HTMLRespons")
-async def register_user(request:Request, email: str = Form(...), username : str = form(...),
-                        first_name: str = Form(...), last_name : str = Form(...),
-                        password: str = Form(...), password2 : str = Form(...),
-                        db: Session = Depends(get_db)):
+@router.post("/register", response_class = HTMLResponse)
+async def register_user(request:Request, email: str = Form(...), username : str = Form(...),first_name: str = Form(...), last_name : str = Form(...),
+                        password: str = Form(...), verify_password : str = Form(...),db: Session = Depends(get_db)):
     
-validation1 = db.query(models.Users).filter(models.Users.username == username).first()
+    validation1 = db.query(Users).filter(Users.username == username).first()
 
-validation2 = db.query(models.Users).filter(models.Users.email == email).first()
+    validation2 = db.query(Users).filter(Users.email == email).first()
 
-if password != password2 or validation1 is Not None or validation2 is not None:
-    msg = "Invalid registration request"
-    return templates.TemplateResponse("register.html", {"request": request, "msg": msg})
+    if password != verify_password or validation1 is not None or validation2 is not None:
+        msg = "Invalid registration request"
+        return templates.TemplateResponse("register.html", {"request": request, "msg": msg})
 
-user_model = models.Users()
-user_model.username = username
-user_model.email = username
-user_model.first_name = first_name
-user_model.last_name = last_name
+    user_model = Users()
+    user_model.username = username
+    user_model.email = email
+    user_model.first_name = first_name
+    user_model.last_name = last_name
+    hashed_password = get_password_hash(password)
+    user_model.hashed_password = hashed_password
+    user_model.is_active  =True
 
+    db.add(user_model)
+    db.commit()
 
-hashed_password = get_password_hash(password)
-user_model.hashed_password = hashed_password
-user_model.is_active  =True
-
-db.add(user_model)
-db.commit()
-
-msg = "User Created Successfully"
-return templates.TemplateResponse("login.html",{"request": request, "msg": msg})
+    msg = "User Created Successfully"
+    return templates.TemplateResponse("login.html",{"request": request, "msg": msg})
 
 
 

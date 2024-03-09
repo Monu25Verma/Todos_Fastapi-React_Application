@@ -17,7 +17,7 @@ from fastapi.templating import Jinja2Templates
 router = APIRouter()
 router = APIRouter(
     prefix="/todo",
-    tags=['todos'],
+    tags=['todo'],
     responses = {404: {"description": "Not found"}}
 )
 

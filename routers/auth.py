@@ -1,4 +1,7 @@
 import sys
+
+from passlib.handlers.bcrypt import bcrypt
+
 sys.path.append("..")
 
 from starlette.responses import RedirectResponse
@@ -87,7 +90,7 @@ def create_access_token(username: str, user_id: int, role: str, expires_delta: t
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def get_password_hash(password: str):
-
+    return bcrypt_context.hash(password)
 
 
 
@@ -105,7 +108,7 @@ async def get_current_user(request: Request): #,token: Annotated[str, Depends(Oa
             #return None
             #raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user.')
         #users_details = {'username': username, 'id': user_id, 'user_role': user_role}
-        # users_details['id'] = users_details['id'][0]
+        user_id = user_id[0]
         # return users_details
         return {"username":username, "id": user_id}
     except JWTError:
@@ -121,7 +124,7 @@ def create_user(db: db_dependency,
         first_name=create_user_request.first_name,
         last_name=create_user_request.last_name,
         role=create_user_request.role,
-        hashed_password=bcrypt_context.hash(create_user_request.password),
+        hashed_password=get_password_hash(create_user_request.password),
         is_active=True,
         phone_number  = create_user_request.phone_number
     )
@@ -140,7 +143,7 @@ async def login_for_access_token(response : Response, form_data: OAuth2PasswordR
         return False
         #raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='could not validate user')
     token_expires = timedelta(minutes=60)
-    token = create_access_token(user.username, user.id, expires_delta = token_expires)
+    token = create_access_token(user.username,user.id, user.role, expires_delta = token_expires)
 
     response.set_cookie(key = "access_token", value= token, httponly = True)
     #return {'access_token': token, 'token_type': 'bearer'}
@@ -172,8 +175,8 @@ async def login(request: Request, db : Session = Depends(get_db)):
 
 @router.get("/logout")
 async def logout(request:Request):
-    msg= "Logout Successfull"
-    response = templates.TemplateResponse("home.html", {"request":request, "msg":msg})
+    msg= "Logout Successful!!!"
+    response = templates.TemplateResponse("login.html", {"request":request, "msg":msg})
     response.delete_cookie(key = "access_token")
     return response
 
@@ -187,7 +190,8 @@ async def register(request:Request):
 @router.post("/register", response_class = HTMLResponse)
 async def register_user(request:Request, email: str = Form(...), username : str = Form(...),first_name: str = Form(...), last_name : str = Form(...),
                         password: str = Form(...), verify_password : str = Form(...),db: Session = Depends(get_db)):
-    
+
+    # Process of Validation
     validation1 = db.query(Users).filter(Users.username == username).first()
 
     validation2 = db.query(Users).filter(Users.email == email).first()
@@ -196,6 +200,8 @@ async def register_user(request:Request, email: str = Form(...), username : str 
         msg = "Invalid registration request"
         return templates.TemplateResponse("register.html", {"request": request, "msg": msg})
 
+
+    # Mapping Frontend Data to Backend Model
     user_model = Users()
     user_model.username = username
     user_model.email = email
@@ -205,6 +211,7 @@ async def register_user(request:Request, email: str = Form(...), username : str 
     user_model.hashed_password = hashed_password
     user_model.is_active  =True
 
+    # Data Storing in DB
     db.add(user_model)
     db.commit()
 

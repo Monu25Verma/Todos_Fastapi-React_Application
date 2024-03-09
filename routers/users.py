@@ -29,8 +29,7 @@ bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 
 class verifypassword(BaseModel):
-    password :\
-        str
+    password : str
     new_password : str = Field(min_length = 6)
 
 # class numberupdate(BaseModel):

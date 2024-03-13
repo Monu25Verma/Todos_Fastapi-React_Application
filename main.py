@@ -1,7 +1,7 @@
 from fastapi import FastAPI,Request
 from models import Base           #.Base is for testing file connection
 from database import engine            #.Database is for testing file connection
-from routers import auth, todos, admin, users, user_changepass
+from routers import auth, todos, admin, users, user_changepass, address
 from starlette.staticfiles import StaticFiles
 from starlette import status
 from starlette.responses import RedirectResponse
@@ -44,5 +44,7 @@ app.include_router(todos.router)
 app.include_router(admin.router)
 app.include_router(users.router)
 app.include_router(user_changepass.router)
+#app.include_router(address.router)
+
 
 

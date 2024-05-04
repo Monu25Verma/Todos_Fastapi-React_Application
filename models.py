@@ -12,6 +12,7 @@ class Users(Base):
     is_active = Column(Boolean, default=True)
     role = Column(String)
     phone_number = Column(String)
+    #address_id = Column(Integer, ForeignKey("address.id"), nullable= True)
 
 
 class Todos(Base):
@@ -23,8 +24,20 @@ class Todos(Base):
     priority = Column(Integer)
     complete = Column(Boolean, default=False)
     owner_id = Column(Integer, ForeignKey("users.id"))
-    
+
+#     owner = relatonshup("Users", back_populates = "todos")
+
 # class Address(Base):
 #     __tablename__ = 'address'
-#
-#     Address1 = Column()
+
+#     address1 = Column(String)
+#     address2 = Column(String)
+#     city = Column(String)
+#     state = Column(String)
+#     country = Column(String)
+#     postalcode = Column(String)
+#      apt_num =  Column(integer)
+
+#     owner = relationship("Users", back_populates = "address")
+
+

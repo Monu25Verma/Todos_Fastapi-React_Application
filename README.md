@@ -46,7 +46,7 @@ This project was been deployed using render.com and ran on a live server (https:
 ## Output Images
 Here are some output images from the live deployment:
 
-- ![Authentication Page](Deployment Output/1.png)
-- ![Register User](Deployment Output/2.png)
-- ![Todo List](Deployment Output/3.png)
+- ![Logs1](https://github.com/Monu25Verma/Todos_Fastapi-React_Application/blob/master/Deployment%20Output/1.png)
+- ![Logs2](https://github.com/Monu25Verma/Todos_Fastapi-React_Application/blob/master/Deployment%20Output/2.png)
+- ![Logs3](https://github.com/Monu25Verma/Todos_Fastapi-React_Application/blob/master/Deployment%20Output/3.png)
 

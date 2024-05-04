@@ -23,3 +23,8 @@ class Todos(Base):
     priority = Column(Integer)
     complete = Column(Boolean, default=False)
     owner_id = Column(Integer, ForeignKey("users.id"))
+    
+# class Address(Base):
+#     __tablename__ = 'address'
+#
+#     Address1 = Column()

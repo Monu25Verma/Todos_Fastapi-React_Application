@@ -5,16 +5,17 @@ from routers import auth, todos, admin, users, user_changepass
 from starlette.staticfiles import StaticFiles
 from starlette import status
 from starlette.responses import RedirectResponse
+import uvicorn
 
 description = """
 Book App API helps you do awesome stuff. 🚀
 """
 
 app = FastAPI(
-    title="Book App",
+    title="Todos App",
     description=description,
     summary="",
-    version="0.0.2",
+    version="0.0.1",
     contact={
         "Made By": "Monu Verma",
         "url": "https://github.com/Monu25Verma"
@@ -46,3 +47,5 @@ app.include_router(users.router)
 app.include_router(user_changepass.router)
 
 
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
